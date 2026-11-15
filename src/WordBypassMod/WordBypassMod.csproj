@@ -8,6 +8,8 @@
     <RootNamespace>WordBypassMod</RootNamespace>
     <!-- 离线构建时不访问 nuget.org 拉漏洞库 -->
     <NuGetAudit>false</NuGetAudit>
+    <!-- 不把 git 提交号写进 AssemblyInformationalVersion，保证可复现构建 -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
