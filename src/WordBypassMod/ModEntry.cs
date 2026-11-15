@@ -64,7 +64,8 @@ namespace WordBypassMod
             Log.Info("配置: enabled=" + _enabled
                 + "，词表字段=" + (TableField != null)
                 + "，聊天窗口字段=" + (ChatWindowField != null));
-            if (TableField == null || ChatWindowField == null) WarnLayout();
+            if (TableField == null) WarnLayout();
+            else if (ChatWindowField == null) Log.Warn("找不到 UIManager._cachedChatWindow，改用公开属性 chat 判断聊天窗口。");
         }
 
         public override void OnConfigChanged()
@@ -92,7 +93,7 @@ namespace WordBypassMod
         private void Tick()
         {
             if (!_enabled) return;
-            if (TableField == null || ChatWindowField == null) return;
+            if (TableField == null) return;
 
             if (!IsChatVisible())
             {
@@ -132,11 +133,22 @@ namespace WordBypassMod
 
         private bool IsChatVisible()
         {
-            if (ChatWindowField == null) return false;
             if (!SimpleSingletonProvider<UIManager>.hasInstance) return false;
 
-            // 不构造窗口：只读 UIManager 已经缓存的那一个；从没开过聊天就是 null。
-            ChatWindow window = ChatWindowField.GetValue(SimpleSingletonProvider<UIManager>.inst) as ChatWindow;
+            UIManager ui = SimpleSingletonProvider<UIManager>.inst;
+            ChatWindow window = null;
+
+            if (ChatWindowField != null)
+            {
+                // 不构造窗口：只读 UIManager 已经缓存的那一个；从没开过聊天就是 null。
+                window = ChatWindowField.GetValue(ui) as ChatWindow;
+            }
+            else
+            {
+                // 字段被改名时退回公开属性（会按需构造窗口，只在异常版本下走这条路）。
+                try { window = ui.chat; } catch { return false; }
+            }
+
             if (window == null) return false;
 
             // FairyGUI.Window.isShowing：Show() 后为 true、Hide() 后为 false。
@@ -161,8 +173,8 @@ namespace WordBypassMod
         {
             if (_warnedLayout) return;
             _warnedLayout = true;
-            Log.Warn("游戏程序集布局变了（找不到 DFAAlgorithm.hashtable 或 UIManager._cachedChatWindow），"
-                + "本模组不会生效；需要按新版本重新确认字段名。");
+            Log.Warn("游戏程序集布局变了（找不到 DFAAlgorithm.hashtable），本模组不会生效；"
+                + "需要按新版本重新确认字段名。");
         }
     }
 }
