@@ -1,0 +1,10 @@
+{
+  "id": "WordBypassMod",
+  "name": "聊天敏感词绕过",
+  "version": "1.0.0",
+  "author": "TenkinMori",
+  "description": "聊天发送不再被敏感词替换；只影响聊天，改名与公会名/公告仍按原样校验。",
+  "permissions": 17,
+  "sdkVersion": "3.1.1",
+  "dependencies": []
+}
