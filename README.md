@@ -7,8 +7,8 @@
 > **游戏：吉星派对（Astral Party）**
 > **插件名：聊天敏感词绕过** ｜ **作者：TenkinMori**
 >
-> 这是一个 CesiumLoader 托管模组：把 `WordBypassMod.dll` 放进
-> `AstralParty_ModLoader/mods/WordBypassMod/` 就生效。
+> CesiumLoader 托管模组：把 `WordBypassMod.dll` 放进
+> `AstralParty_ModLoader/mods/WordBypassMod/` 即可。
 
 ## 作用
 
@@ -18,7 +18,58 @@
 - 只改本机内存里的词表，不改热更包、不改游戏文件、不碰服务器
 - 关闭模组或关掉 `enabled` 立刻恢复原样
 
-## 从 NextWordBypass 移植
+## 安装
+
+前提：游戏已安装 CesiumLoader（根目录有 `version.dll` 和 `AstralParty_ModLoader/`）。
+
+1. 关闭游戏
+2. 把 `dist/WordBypassMod/` 整个文件夹复制到：
+
+   ```text
+   游戏目录/AstralParty_ModLoader/mods/WordBypassMod/
+   ├─ WordBypassMod.dll
+   ├─ WordBypassMod.json
+   └─ icon.png
+   ```
+
+3. 重启游戏
+
+卸载：删除 `mods/WordBypassMod/` 文件夹，重启游戏。
+
+## 使用
+
+进游戏后打开聊天窗口（好友 / 公会），正常打字发送即可，敏感词不再被替换成 `***`。
+
+- 聊天窗口关掉后模组会把词表还原，改名 / 公会名 / 公会公告的校验保持原样
+- 模组每 0.1 秒巡检一次聊天窗口；聊天窗口不在显示状态时不做任何改动
+
+### 配置 `config.json`
+
+首次启动后生成 `AstralParty_ModLoader/mods/WordBypassMod/config.json`：
+
+```json
+{
+  "enabled": true
+}
+```
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `enabled` | `true` | 关掉后立刻还原词表，聊天恢复原版过滤 |
+
+保存后 SDK 会热重载配置（CesiumLoader 2.6.0+），不需要重启游戏。
+
+## 更新日志
+
+### v1.0.0
+
+- 首个版本：把 `AstralParty Next` 的 `NextWordBypass` 移植为 CesiumLoader 托管模组；
+  聊天窗口打开期间把 DFA 词表换成空表，关闭时还原
+- `UIManager._cachedChatWindow` 字段改名时自动退回公开属性 `UIManager.chat`
+
+## 原理
+
+### 移植对照
 
 原版在 `AstralParty Next` 里是两个文件：
 
@@ -84,23 +135,9 @@ if (hashtable == null) return targetStr;        // 没装词表 ⇒ 原样返回
 所以这里走 SDK 允许的路线：只读反射 + 调用游戏自己的公开静态方法（`DFAAlgorithm.Init`），
 和本工作区其它 CesiumLoader 模组（RPC 实例替换、字段改写）是同一类做法。
 
-## 安装
+## 验证
 
-前提：游戏已安装 CesiumLoader（根目录有 `version.dll` 和 `AstralParty_ModLoader/`）。
-
-1. 关闭游戏
-2. 把 `dist/WordBypassMod/` 整个文件夹复制到：
-
-   ```text
-   游戏目录/AstralParty_ModLoader/mods/WordBypassMod/
-   ├─ WordBypassMod.dll
-   ├─ WordBypassMod.json
-   └─ icon.png
-   ```
-
-3. 重启游戏
-
-日志在 `AstralParty_ModLoader/logs/`，出现下面几行即生效：
+看 `AstralParty_ModLoader/logs/activity-mod-*.log`，出现下面几行即生效：
 
 ```text
 [WordBypassMod] 配置: enabled=True，词表字段=True，聊天窗口字段=True
@@ -108,23 +145,10 @@ if (hashtable == null) return targetStr;        // 没装词表 ⇒ 原样返回
 [WordBypassMod] 聊天窗口已关闭：词表已还原
 ```
 
-卸载：删除 `mods/WordBypassMod/` 文件夹，重启游戏。
+同时 `AstralParty_ModLoader/logs/cesium-loader-*.log` 里模组数应该包含 `WordBypassMod`。
 
-## 配置
-
-首次启动后生成 `AstralParty_ModLoader/mods/WordBypassMod/config.json`：
-
-```json
-{
-  "enabled": true
-}
-```
-
-| 键 | 默认 | 说明 |
-|---|---|---|
-| `enabled` | `true` | 关掉后立刻还原词表，聊天恢复原版过滤 |
-
-保存后 SDK 会热重载（CesiumLoader 2.6.0+），不需要重启游戏。
+如果出现 `配置: ... 词表字段=False`，说明本版游戏把 `Tools.DFAAlgorithm.hashtable`
+改了名，模组会写一条警告并停用，需要按新程序集重新确认字段名。
 
 ## 构建
 
@@ -134,7 +158,7 @@ if (hashtable == null) return targetStr;        // 没装词表 ⇒ 原样返回
 pwsh -File build.ps1
 ```
 
-产物在 `dist/WordBypassMod/`。
+产物在 `dist/WordBypassMod/`，同时会打出 `dist/WordBypassMod-1.0.0.zip`。
 
 - `lib/CesiumLoader.SDK.dll`：CesiumLoader SDK（MIT，随仓库提供以便直接构建）
 - `refs/game/*.dll`：游戏热更程序集（2026-11-12 国服版本，`AstralParty.Runtime.dll`
@@ -156,9 +180,9 @@ pwsh -File build.ps1
 
 ## 兼容性
 
-- CesiumLoader SDK 3.1.1+（模组清单声明的下限；实测 3.7.0）
+- CesiumLoader SDK 3.1.1+（模组清单声明的下限；实测 3.8.1）
 - 游戏版本 3.3.0（2026-11-12 热更后）
-- 仅 Windows x64（PC 端）
+- PC 端 Windows x64（本仓库只发布 PC 版）
 
 ## 已知边界
 
